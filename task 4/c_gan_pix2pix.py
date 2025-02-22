@@ -7,27 +7,22 @@ import torchvision.utils as vutils
 from torch.utils.data import DataLoader
 import os
 from PIL import Image
-
 import kagglehub
 
-# Download latest version
+
 path = kagglehub.dataset_download("sabahesaraki/pix2pix-facades-dataset")
 
-print("Path to dataset files:", path)
 
-# Download and preprocess the Facades dataset
-data_root = path
-os.makedirs(data_root, exist_ok=True)
+os.makedirs(path, exist_ok=True)
 
 dataset = dset.ImageFolder(root=data_root, transform=transforms.Compose([
-    transforms.Resize((256, 512)),  # Pix2Pix expects paired images (256x512 for (input,target))
+    transforms.Resize((256, 512)),  
     transforms.ToTensor(),
     transforms.Normalize((0.5,), (0.5,))
 ]))
 dataloader = DataLoader(dataset, batch_size=16, shuffle=True)
 
-
-# Define the Generator (U-Net)
+#The Generator architecture based on UNET
 class UNetGenerator(nn.Module):
     def __init__(self, input_channels=3, output_channels=3, features=64):
         super(UNetGenerator, self).__init__()
@@ -64,8 +59,7 @@ class UNetGenerator(nn.Module):
     def forward(self, x):
         return self.decoder(self.encoder(x))
 
-
-# Define the Discriminator (PatchGAN)
+#The critic architecture
 class PatchGANDiscriminator(nn.Module):
     def __init__(self, input_channels=6, features=64):
         super(PatchGANDiscriminator, self).__init__()
@@ -88,12 +82,12 @@ class PatchGANDiscriminator(nn.Module):
         return self.model(x)
 
 
-# Initialize models
+# Initializing the  models
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 generator = UNetGenerator().to(device)
 discriminator = PatchGANDiscriminator().to(device)
 
-# Losses and optimizers
+# Initializing the losses and optimizerss
 criterion_GAN = nn.BCELoss()
 criterion_L1 = nn.L1Loss()
 optimizer_G = optim.Adam(generator.parameters(), lr=0.0002, betas=(0.5, 0.999))
@@ -108,7 +102,7 @@ print(f"Cached Memory: {torch.cuda.memory_reserved() / 1024**3:.2f} GB")
 
 
 
-# Training loop
+
 num_epochs = 150
 for epoch in range(num_epochs):
     for batch in dataloader:
@@ -128,7 +122,7 @@ for epoch in range(num_epochs):
         loss_D.backward()
         optimizer_D.step()
 
-        # Train Generator
+        # Training the  Generator
         optimizer_G.zero_grad()
         fake_pair = torch.cat((real_A, fake_B), 1)
         fake_output = discriminator(fake_pair)
@@ -139,7 +133,7 @@ for epoch in range(num_epochs):
         optimizer_G.step()
 
     print(f"Epoch {epoch + 1}/{num_epochs} | D Loss: {loss_D.item():.4f} | G Loss: {loss_G.item():.4f}")
-
+    making sure that its working on the gpu , by viewing the memory usage
     print(f"Allocated Memory: {torch.cuda.memory_allocated() / 1024 ** 3:.2f} GB")
     print(f"Cached Memory: {torch.cuda.memory_reserved() / 1024 ** 3:.2f} GB")
 
