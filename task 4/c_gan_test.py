@@ -4,10 +4,8 @@ import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 from torch import nn
 
-# Load the trained generator model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Define the Generator (U-Net)
 class UNetGenerator(nn.Module):
     def __init__(self, input_channels=3, output_channels=3, features=64):
         super(UNetGenerator, self).__init__()
@@ -50,28 +48,23 @@ generator.load_state_dict(torch.load("generator4.pth", map_location=device))
 generator.eval()  # Set model to evaluation mode
 
 
-# Define transformation to match training preprocessing
 transform = transforms.Compose([
     transforms.Resize((256, 256)),
     transforms.ToTensor(),
     transforms.Normalize((0.5,), (0.5,))
 ])
 
-# Load the test image
-image_path = "94.jpg"  # Update with your actual test image path
+image_path = "94.jpg"  
 image = Image.open(image_path).convert("RGB")
-input_tensor = transform(image).unsqueeze(0).to(device)  # Add batch dimension
+input_tensor = transform(image).unsqueeze(0).to(device)  
 
 
-# Generate output using the trained model
 with torch.no_grad():
     output_tensor = generator(input_tensor)
 
-# Convert output back to image format
 output_tensor = output_tensor.squeeze(0).cpu().detach()  # Remove batch dim
 output_image = transforms.ToPILImage()(output_tensor * 0.5 + 0.5)  # Denormalize
 
-# Show the generated image
 plt.figure(figsize=(8, 4))
 plt.subplot(1, 2, 1)
 plt.imshow(image)
@@ -85,5 +78,4 @@ plt.axis("off")
 
 plt.show()
 
-# Optionally, save the generated image
 output_image.save("generated_output.jpg")
